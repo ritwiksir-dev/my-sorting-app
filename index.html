@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>My Sorting App</title>
+<style>
+:root{--bg:#f5f7fb;--card:#fff;--ink:#162033;--muted:#667085;--line:#dbe2ea;--blue:#3157c8;--blue2:#24439e;--soft:#eef2ff;--green:#16745a;--red:#b42318}
+*{box-sizing:border-box} body{margin:0;background:linear-gradient(135deg,#edf4fb 0%,#f3f0fa 52%,#edf7f4 100%);font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;color:var(--ink)}
+.shell{max-width:1100px;margin:auto;padding:34px 18px 50px}
+.top{margin-bottom:22px}.kicker{font-size:12px;letter-spacing:.14em;text-transform:uppercase;font-weight:800;color:var(--blue)}
+h1{font-size:clamp(32px,5vw,52px);letter-spacing:-.045em;margin:7px 0 8px}.lead{margin:0;color:var(--muted);line-height:1.55}
+.card{background:rgba(255,255,255,.92);border:1px solid var(--line);border-radius:22px;box-shadow:0 18px 55px rgba(20,32,55,.08);overflow:hidden}
+.controls{padding:16px;display:flex;gap:10px;flex-wrap:wrap;border-bottom:1px solid var(--line);background:#f8fbfd}
+button,select{font:inherit;border:1px solid var(--line);border-radius:11px;background:white;padding:11px 14px;color:var(--ink)}
+button{font-weight:750;cursor:pointer}button:hover{border-color:#aebbd0}button.main{background:var(--blue);color:#fff;border-color:var(--blue)}button.main:hover{background:var(--blue2)}button.direction-active{background:var(--blue);color:#fff;border-color:var(--blue)}button.direction-active:hover{background:var(--blue2)}
+button.danger{color:var(--red);background:#fff0f0;border-color:#f3caca}
+#asc:not(.direction-active){background:#edf4ff;border-color:#cbdcff;color:#244b9b}
+#desc:not(.direction-active){background:#f1edff;border-color:#d9cffb;color:#5a45a5}
+#dedupe{background:#fff7df;border-color:#f1dfaa;color:#80620b}
+#copy{background:#eaf8f2;border-color:#c5eadb;color:#17684f}
+#clear{background:#fff0f0;border-color:#f3caca;color:#a52a21}
+.segmented .seg[data-sort="auto"]:not(.active){background:#f1f3f6;color:#536070}
+.segmented .seg[data-sort="text"]:not(.active){background:#edf7ff;color:#276080}
+.segmented .seg[data-sort="number"]:not(.active){background:#f4efff;color:#654c99}
+button.direction-active{background:var(--blue)!important;color:#fff!important;border-color:var(--blue)!important}
+.segmented .seg.active{background:var(--blue)!important;color:#fff!important}.sort-choice{display:flex;align-items:center;gap:9px;width:100%;padding:3px 0 5px}
+.sort-label{font-size:12px;color:var(--muted);font-weight:850;letter-spacing:.08em}
+.segmented{display:inline-flex;border:1px solid var(--line);border-radius:12px;padding:3px;background:#f2f5fa}
+.segmented .seg{border:0;border-radius:9px;padding:9px 16px;background:transparent;color:var(--muted);box-shadow:none}
+.segmented .seg:hover{transform:none;border:0;color:var(--ink)}
+.segmented .seg.active{background:var(--blue);color:#fff}
+.mode{display:flex;align-items:center;gap:8px;margin-left:auto}.mode span{font-size:13px;color:var(--muted);font-weight:700}
+.grid{display:grid;grid-template-columns:1fr 1fr}.pane{padding:20px}.pane+ .pane{border-left:1px solid var(--line);background:#f8fbfd}
+.ph{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-weight:800}.count{font-size:12px;color:var(--muted);background:#eef1f5;padding:5px 9px;border-radius:999px}
+textarea{width:100%;min-height:390px;border:1px solid var(--line);border-radius:14px;padding:15px;resize:vertical;outline:none;font:500 15px/1.6 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:var(--ink)}
+textarea:focus{border-color:#8099df;box-shadow:0 0 0 4px rgba(49,87,200,.08)}textarea[readonly]{background:#f8fafc}
+.options{padding:15px 20px;border-top:1px solid var(--line);display:flex;gap:20px;flex-wrap:wrap;align-items:center}
+.check{display:flex;gap:7px;align-items:center;color:var(--muted);font-size:13px;font-weight:650}.check input{width:17px;height:17px;accent-color:var(--blue)}
+.status{margin-left:auto;font-size:13px;font-weight:750;color:var(--green)}.hint{font-size:12px;color:var(--muted);line-height:1.5;margin-top:8px}
+footer{text-align:center;font-size:12px;color:var(--muted);margin-top:17px}
+@media(max-width:760px){.shell{padding-top:24px}.grid{grid-template-columns:1fr}.pane+.pane{border-left:0;border-top:1px solid var(--line)}textarea{min-height:250px}.sort-choice{align-items:flex-start;flex-direction:column}.segmented{display:grid;grid-template-columns:repeat(3,1fr);width:100%}.segmented .seg{width:100%}.mode{margin-left:0;width:100%}.mode select{flex:1}.controls>button{flex:1 1 calc(50% - 8px)}.status{width:100%;margin-left:0}}
+</style>
+</head>
+<body>
+<main class="shell">
+<div class="top"><div class="kicker">Flexible list utility</div><h1>My Sorting App</h1>
+<p class="lead">Sort names, words, numbers, mixed entries, and numbered lists. You can also keep the first line as a heading and exclude it from sorting and item counts.</p></div>
+
+<section class="card">
+<div class="controls">
+<button class="direction-active" id="asc">↑ A–Z / Smallest–Largest</button>
+<button id="desc">↓ Z–A / Largest–Smallest</button>
+<button id="dedupe">Remove Duplicates</button>
+<button id="copy">Copy Result</button>
+<button class="danger" id="clear">Clear</button>
+<div class="sort-choice">
+<span class="sort-label">SORT BY</span>
+<div class="segmented" role="group" aria-label="Choose sorting type">
+<button type="button" class="seg active" data-sort="auto">Auto</button>
+<button type="button" class="seg" data-sort="text">Words</button>
+<button type="button" class="seg" data-sort="number">Numbers</button>
+</div>
+</div>
+<div class="mode"><span>Split by</span>
+<select id="splitMode">
+<option value="auto">Auto detect</option>
+<option value="line">Lines</option>
+<option value="comma">Commas</option>
+<option value="word">Individual words</option>
+</select></div>
+</div>
+
+<div class="grid">
+<div class="pane"><div class="ph"><span>Input</span><span class="count" id="ic">0 items</span></div>
+<textarea id="input" placeholder="Examples:
+
+Asha 27
+Bipul 5
+Anuradha 12
+
+or
+
+Class 10, Class 2, Class 12, Class 1
+
+or paste a paragraph and choose “Individual words”."></textarea>
+<div class="hint">Numbered lists are supported too. For example, “3. Asha” is sorted by “Asha”, not by 3, and the result is renumbered.</div></div>
+
+<div class="pane"><div class="ph"><span>Sorted result</span><span class="count" id="oc">0 items</span></div>
+<textarea id="output" readonly placeholder="Sorted result will appear here."></textarea>
+<div class="hint" id="info">Auto detect keeps each line or comma-separated entry together.</div></div>
+</div>
+
+<div class="options">
+<label class="check"><input type="checkbox" id="case" checked> Ignore upper/lower case</label>
+<label class="check"><input type="checkbox" id="serial" checked> Ignore leading serial numbers & renumber result</label>
+<label class="check"><input type="checkbox" id="heading"> First line is a heading</label>
+<label class="check"><input type="checkbox" id="trim" checked> Ignore extra spaces</label>
+<div class="status" id="status"></div>
+</div>
+</section>
+<footer>My Sorting App • Runs entirely in your browser</footer>
+</main>
+
+<script>
+const $=id=>document.getElementById(id), input=$('input'), output=$('output'), mode=$('splitMode'),
+ic=$('ic'),oc=$('oc'),status=$('status'),info=$('info');
+let currentSortBy='auto';
+
+function parse(text){
+ text=text.replace(/\r/g,'').trim();
+ if(!text)return [];
+ let m=mode.value, arr;
+ if(m==='line') arr=text.split('\n');
+ else if(m==='comma') arr=text.split(',');
+ else if(m==='word') arr=text.split(/\s+/);
+ else{
+   if(text.includes('\n')) arr=text.split('\n');
+   else if(text.includes(',')) arr=text.split(',');
+   else arr=text.split(/\s+/);
+ }
+ return arr.map(x=>$('trim').checked?x.trim():x).filter(x=>x.trim()!=='');
+}
+function pureNumber(s){
+ let x=s.trim().replace(/,/g,'');
+ return /^[-+]?(?:\d+\.?\d*|\.\d+)$/.test(x)?Number(x):null;
+}
+function stripSerial(s){
+ // Handles 1. Name, 1) Name, (1) Name, 1 - Name, 1: Name, 1 Name
+ return s.replace(/^\s*(?:\(\s*\d+\s*\)|\d+)\s*(?:[.)\-:]\s*)?/, '').trim();
+}
+function firstUsefulNumber(s){
+ // Finds the first number after any leading serial number has been removed.
+ const base=$('serial').checked?stripSerial(s):s;
+ const m=base.match(/[-+]?(?:\d+(?:,\d{3})*(?:\.\d+)?|\.\d+)/);
+ return m ? Number(m[0].replace(/,/g,'')) : null;
+}
+function textKey(s){
+ let base=$('serial').checked?stripSerial(s):s;
+ // For "sort by text", ignore standalone numeric chunks as much as possible.
+ return base.replace(/[-+]?(?:\d+(?:,\d{3})*(?:\.\d+)?|\.\d+)/g,' ').replace(/\s+/g,' ').trim();
+}
+function cmp(a,b){
+ const serialAware=$('serial').checked;
+ const aa=serialAware?stripSerial(a):a, bb=serialAware?stripSerial(b):b;
+ const choice=currentSortBy;
+ const c=new Intl.Collator(undefined,{numeric:true,sensitivity:$('case').checked?'base':'variant'});
+
+ if(choice==='number'){
+   const na=firstUsefulNumber(a), nb=firstUsefulNumber(b);
+   if(na!==null && nb!==null){
+     const d=na-nb;
+     return d!==0?d:c.compare(textKey(a),textKey(b));
+   }
+   // No-number entries are treated as smaller than numbered entries.
+   if(na===null && nb!==null)return -1;
+   if(na!==null && nb===null)return 1;
+   return c.compare(textKey(a),textKey(b));
+ }
+
+ if(choice==='text'){
+   return c.compare(textKey(a),textKey(b));
+ }
+
+ const na=pureNumber(aa), nb=pureNumber(bb);
+ if(na!==null && nb!==null)return na-nb;
+ if(na!==null && nb===null)return -1;
+ if(na===null && nb!==null)return 1;
+ return c.compare(aa,bb);
+}
+function flash(t){status.textContent=t;clearTimeout(window.st);window.st=setTimeout(()=>status.textContent='',2200)}
+function headingText(){
+ if(!$('heading').checked)return '';
+ return input.value.replace(/\r/g,'').split('\n').find(x=>x.trim()!=='')?.trim() || '';
+}
+function dataItems(){
+ let a=parse(input.value);
+ if($('heading').checked && a.length) a=a.slice(1);
+ return a;
+}
+function counts(){
+ ic.textContent=dataItems().length+' items';
+ let out=output.value?output.value.split('\n').filter(x=>x.trim()!==''):[];
+ if($('heading').checked && out.length)out=out.slice(1);
+ oc.textContent=out.length+' items';
+}
+function sort(dir){
+ let a=dataItems();if(!a.length){output.value='';counts();flash('Please enter list items first.');return}
+ const serialAware=$('serial').checked;
+ a.sort((x,y)=>cmp(x,y)*dir);
+ if(serialAware){
+   a=a.map((x,i)=>`${i+1}. ${stripSerial(x)}`);
+ }
+ const choice=currentSortBy;
+ if(choice==='number') info.textContent='Sorted by the first relevant number in each item • items without numbers are treated as the smallest • serial numbers ignored when enabled.';
+ else if(choice==='text') info.textContent='Sorted by words/text • numeric parts ignored for alphabetical comparison.';
+ else info.textContent='Auto sorting • natural text and numeric sorting selected automatically.';
+ if(serialAware) info.textContent += ' • result renumbered.';
+ const head=headingText();
+ output.value=(head?head+'\n\n':'')+a.join('\n');counts();
+ flash(dir===1?'Sorted ascending.':'Sorted descending.');
+}
+function setDirection(dir){
+ $('asc').classList.toggle('direction-active',dir===1);
+ $('desc').classList.toggle('direction-active',dir===-1);
+}
+$('asc').onclick=()=>{setDirection(1);sort(1)};
+$('desc').onclick=()=>{setDirection(-1);sort(-1)};
+$('dedupe').onclick=()=>{
+ let a=dataItems();if(!a.length){flash('Please enter list items first.');return}
+ let seen=new Set(), before=a.length;
+ a=a.filter(x=>{let k=$('case').checked?x.toLocaleLowerCase():x;if(seen.has(k))return false;seen.add(k);return true});
+ const head=headingText(); input.value=(head?head+'\n\n':'')+a.join('\n');output.value='';counts();flash((before-a.length)+' duplicate(s) removed.');
+};
+$('copy').onclick=async()=>{if(!output.value){flash('Nothing to copy yet.');return}try{await navigator.clipboard.writeText(output.value)}catch(e){output.select();document.execCommand('copy')}flash('Result copied.')}
+$('clear').onclick=()=>{input.value='';output.value='';counts();input.focus();flash('Cleared.')}
+input.addEventListener('input',counts);mode.addEventListener('change',counts);document.querySelectorAll('.seg').forEach(btn=>{
+ btn.addEventListener('click',()=>{
+   currentSortBy=btn.dataset.sort;
+   document.querySelectorAll('.seg').forEach(b=>b.classList.toggle('active',b===btn));
+   output.value='';
+   counts();
+   info.textContent=currentSortBy==='text'?'Words mode selected — sort alphabetically.':
+                    currentSortBy==='number'?'Numbers mode selected — items without numbers are treated as the smallest.':
+                    'Auto mode selected — the app chooses the sorting method.';
+ });
+});$('trim').addEventListener('change',counts);$('heading').addEventListener('change',()=>{output.value='';counts();});counts();
+</script>
+</body></html>
